@@ -21,9 +21,9 @@ namespace AlgoritmeProject
                 Console.WriteLine("Gefixeerde mensen ingedeeld!");
             }
             // Alle taken optellen die gekozen zijn van laag naar hoog, 0 achteraan
-            select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 1 order by Aantal
+            select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 0 order by Aantal
             // mensen met het aantal voorkeuren van laag naar hoog
-
+             select UserId, count(UserId)Gekozen from Bekwaamheid group by UserId having count(UserId) > 0 order by Gekozen
             //mensen van hoog aantal beschikbare uren naar laag
 
             //Check of er nog open/ niet ingevulde taken in de lijst staan
