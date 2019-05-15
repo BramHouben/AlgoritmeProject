@@ -131,7 +131,7 @@ namespace AlgoritmeProject
                         {
                             voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
                         }
-                        else if(prioriteit > 1 && aantaltaken > 1)
+                        else if (prioriteit > 1 && aantaltaken > 1)
                         {
                             voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
                         }
@@ -141,7 +141,7 @@ namespace AlgoritmeProject
                         }
                     }
                 }
-
             }
         }
+    }
 }
