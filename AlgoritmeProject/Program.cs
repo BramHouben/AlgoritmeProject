@@ -9,6 +9,7 @@ namespace AlgoritmeProject
     {
         private static void Main(string[] args)
         {
+            List<Taak> alleTaken = new List<Taak>();
             List<Algoritme> users = new List<Algoritme>();
             SqlConnection sqlConnection = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
             sqlConnection.Open();
@@ -53,7 +54,7 @@ namespace AlgoritmeProject
 
             //    "select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 0 order by Aantal";
             //// mensen met het aantal voorkeuren van laag naar hoog
-            //"select UserId, count(UserId)Gekozen from Bekwaamheid group by UserId having count(UserId) > 0 order by Gekozen";
+            //"select Docent_id, count(Docent_id)Gekozen from Bekwaamheid group by Docent_id having count(Docent_id) > 0 order by Gekozen";
             //mensen van hoog aantal beschikbare uren naar laag
 
             //Check of er nog open/ niet ingevulde taken in de lijst staan
