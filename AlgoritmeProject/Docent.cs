@@ -12,7 +12,7 @@ namespace AlgoritmeProject
 
         public Docent()
         {
-            //voorkeuren = ophaalFunctie(); 
+            voorkeuren = new List<Voorkeur>();
             aantalkeuzes = voorkeuren.Count;
 
         }

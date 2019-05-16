@@ -12,17 +12,19 @@ namespace AlgoritmeProject
             List<Taak> alleTaken = new List<Taak>();
             List<Docent> users = new List<Docent>();
             SqlConnection sqlConnection = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
-            sqlConnection.Open();
             //connstring
-            
+            sqlConnection.Open();
             // begin algoritme
 
             // als 1e de lijst met gefixeerde laag naar hoog
-            using (SqlCommand command = new SqlCommand("INSERT INTO EindTabelAlgoritme(Docent_id, Taak_id) SELECT DocentID,Taak_id FROM GefixeerdeTaken"))
+            using (sqlConnection)
             {
-                command.Connection = sqlConnection;
-                command.ExecuteNonQuery();
-                Console.WriteLine("Gefixeerde mensen ingedeeld!");
+                using (SqlCommand command = new SqlCommand("INSERT INTO EindTabelAlgoritme(Docent_id, Taak_id) SELECT DocentID,Taak_id FROM GefixeerdeTaken"))
+                {
+                    command.Connection = sqlConnection;
+                    command.ExecuteNonQuery();
+                    Console.WriteLine("Gefixeerde mensen ingedeeld!");
+                }
             }
             // Alle taken optellen die gekozen zijn van laag naar hoog, 0 achteraan
 
@@ -49,6 +51,7 @@ namespace AlgoritmeProject
                 }
             }
 
+            ScoreBerekenen();
 
             //    "select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 0 order by Aantal";
             //// mensen met het aantal voorkeuren van laag naar hoog
@@ -66,18 +69,21 @@ namespace AlgoritmeProject
                 List<Voorkeur> voorkeuren = new List<Voorkeur>();
                 try
                 {
-                    using(SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id WHERE d.DocentID = @docentID", sqlConnection))
+                    using (sqlConnection)
                     {
-                        cmd.Parameters.AddWithValue("@docentID", docentID);
-                        using(SqlDataReader reader = cmd.ExecuteReader())
+                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id WHERE d.DocentID = @docentID", sqlConnection))
                         {
-                            while (reader.Read())
+                            cmd.Parameters.AddWithValue("@docentID", docentID);
+                            using (SqlDataReader reader = cmd.ExecuteReader())
                             {
-                                Voorkeur voorkeur = new Voorkeur();
-                                voorkeur.TaakID = (int)reader["TaakID"];
-                                voorkeur.TaakNaam = (string)reader["Taak"];
-                                voorkeur.Prioriteit = (int)reader["Prioriteit"];
-                                voorkeuren.Add(voorkeur);
+                                while (reader.Read())
+                                {
+                                    Voorkeur voorkeur = new Voorkeur();
+                                    voorkeur.TaakID = (int)reader["TaakID"];
+                                    voorkeur.TaakNaam = (string)reader["Taak"];
+                                    voorkeur.Prioriteit = (int)reader["Prioriteit"];
+                                    voorkeuren.Add(voorkeur);
+                                }
                             }
                         }
                     }
@@ -95,7 +101,6 @@ namespace AlgoritmeProject
 
                 using (sqlConnection)
                 {
-
                     using (var command = new SqlCommand("Select * From Docent", sqlConnection))
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
@@ -126,21 +131,31 @@ namespace AlgoritmeProject
                         if (aantaltaken == 1)
                         {
                             voorkeur.Score = (100 - (5 * prioriteit) * 0.5);
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
                         }
                         else if (prioriteit == 1)
                         {
                             voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
                         }
                         else if (prioriteit > 1 && aantaltaken > 1)
                         {
                             voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
                         }
                         else if (aantaltaken == 1 && prioriteit == 1)
                         {
                             voorkeur.Score = 100;
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
                         }
                     }
                 }
+            }
+
+            void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score)
+            {
+                Console.WriteLine(String.Format("Docent id: {0}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score));
+
             }
         }
     }
