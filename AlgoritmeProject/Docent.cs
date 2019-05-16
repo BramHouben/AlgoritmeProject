@@ -9,6 +9,7 @@ namespace AlgoritmeProject
         public int docentID { get; set; }
         public int aantalkeuzes { get; set; }
         public List<Voorkeur> voorkeuren { get; set; }
+        public int InzetbareUren { get; set; }
 
         public Docent()
         {

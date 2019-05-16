@@ -75,7 +75,7 @@ namespace AlgoritmeProject
                 using (SqlConnection con = new SqlConnection(constring))
                     {
                         con.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id WHERE d.DocentID = @docentID", con))
+                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
                         {
                             cmd.Parameters.AddWithValue("@docentID", docentID);
                             using (SqlDataReader reader = cmd.ExecuteReader())
@@ -86,6 +86,14 @@ namespace AlgoritmeProject
                                     voorkeur.TaakID = (int)reader["TaakID"];
                                     voorkeur.TaakNaam = (string)reader["Taak"];
                                     voorkeur.Prioriteit = (int)reader["Prioriteit"];
+                                    if (DBNull.Value.Equals(reader["BenodigdeUren"]))
+                                    {
+                                        voorkeur.BenodigdeUren = 0;
+                                    }
+                                    else
+                                    {
+                                        voorkeur.BenodigdeUren = (int)reader["BenodigdeUren"];
+                                    }
                                     voorkeuren.Add(voorkeur);
                                 }
                             }
@@ -116,11 +124,20 @@ namespace AlgoritmeProject
                                 docent.docentID = (int)reader["DocentID"];
                                 docent.voorkeuren = OphalenVoorkeuren(docent.docentID);
                                 docent.aantalkeuzes = docent.voorkeuren.Count;
+                                if (DBNull.Value.Equals(reader["RuimteVoorInzet"]))
+                                {
+                                    docent.InzetbareUren = 0;
+                                }
+                                else
+                                {
+                                    docent.InzetbareUren = (int)reader["RuimteVoorInzet"];
+                                }
                                 docenten.Add(docent);
                             }
                         }
                     }
                 }
+                
                 return docenten;
             }
 
@@ -130,7 +147,7 @@ namespace AlgoritmeProject
                 {
                     int aantaltaken = docent.aantalkeuzes;
                     if(docent.voorkeuren.Count != 0) { 
-                    Console.WriteLine(docent.docentID + "---------------------");
+                    Console.WriteLine(docent.docentID + "--------------------------------");
                     }
                     foreach (var voorkeur in docent.voorkeuren)
                     {
@@ -138,35 +155,59 @@ namespace AlgoritmeProject
 
                         if (aantaltaken == 1)
                         {
-                            voorkeur.Score = (100 - (5 * prioriteit) * 0.5);
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
+                            if(docent.InzetbareUren > voorkeur.BenodigdeUren)
+                            {
+                                voorkeur.Score = (100 - (5 * prioriteit) * 0.5);
+                            }
+                            else
+                            {
+                                int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
+                                voorkeur.Score = (100 - (5 * prioriteit) * 0.5) - (verschil / 8);
+                            }
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
                         }
                         else if (prioriteit == 1)
                         {
-                            voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
+                            if (docent.InzetbareUren > voorkeur.BenodigdeUren)
+                            {
+                                voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
+                            }
+                            else
+                            {
+                                int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
+                                voorkeur.Score = (100 - (5 * aantaltaken) * 0.5) - (verschil / 8);
+                            }
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
                         }
                         else if (prioriteit > 1 && aantaltaken > 1)
                         {
-                            voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
+                            if(docent.InzetbareUren > voorkeur.BenodigdeUren)
+                            {
+                                voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
+                            }
+                            else
+                            {
+                                int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
+                                voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5) - (verschil / 8);
+                            }
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
                         }
                         else if (aantaltaken == 1 && prioriteit == 1)
                         {
                             voorkeur.Score = 100;
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
+                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
                         }
                     }
                     if (docent.voorkeuren.Count != 0)
                     {
-                        Console.WriteLine("--------------------------------");
+                        Console.WriteLine("---------------------------------");
                     }
                 }
             }
 
-            void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score)
+            void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
             {
-                Console.WriteLine(String.Format("Docent id: {0}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score));
+                Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
 
 
             }
