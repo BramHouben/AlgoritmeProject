@@ -12,30 +12,30 @@ namespace AlgoritmeProject
             List<Taak> alleTaken = new List<Taak>();
             List<Docent> users = new List<Docent>();
             SqlConnection sqlConnection = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
+            string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
             //connstring
-            sqlConnection.Open();
+            //
             // begin algoritme
 
             // als 1e de lijst met gefixeerde laag naar hoog
-            using (sqlConnection)
-            {
-                using (SqlCommand command = new SqlCommand("INSERT INTO EindTabelAlgoritme(Docent_id, Taak_id) SELECT DocentID,Taak_id FROM GefixeerdeTaken"))
-                {
-                    command.Connection = sqlConnection;
-                    command.ExecuteNonQuery();
-                    Console.WriteLine("Gefixeerde mensen ingedeeld!");
-                }
-            }
+            //using (SqlConnection con = new SqlConnection(constring))
+            //{
+            //    con.Open();
+            //    using (SqlCommand command = new SqlCommand("INSERT INTO EindTabelAlgoritme(Docent_id, Taak_id) SELECT DocentID,Taak_id FROM GefixeerdeTaken"))
+            //    {
+            //        command.Connection = sqlConnection;
+            //        command.ExecuteNonQuery();
+            //        Console.WriteLine("Gefixeerde mensen ingedeeld!");
+            //    }
+            //}
             // Alle taken optellen die gekozen zijn van laag naar hoog, 0 achteraan
 
-            using (sqlConnection)
+            using (SqlConnection con = new SqlConnection(constring))
             {
-                
-                using (var command = new SqlCommand("SelecteerAlleinzetten", sqlConnection)
+                con.Open();
+                using (var command = new SqlCommand("SelecteerAlleinzetten", con))
                 {
-                    CommandType = CommandType.StoredProcedure
-                })
-                {
+                    command.CommandType = CommandType.StoredProcedure;
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
                         //var reader = command.ExecuteReader();
@@ -46,32 +46,36 @@ namespace AlgoritmeProject
                             item.voorkeuren = OphalenVoorkeuren((int)reader["DocentID"]);
                             users.Add(item);
                         }
-
                     }
+
                 }
             }
+               
+        
 
             ScoreBerekenen();
+        
+        //    "select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 0 order by Aantal";
+        //// mensen met het aantal voorkeuren van laag naar hoog
+        //"select Docent_id, count(Docent_id)Gekozen from Bekwaamheid group by Docent_id having count(Docent_id) > 0 order by Gekozen";
+        //mensen van hoog aantal beschikbare uren naar laag
 
-            //    "select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 0 order by Aantal";
-            //// mensen met het aantal voorkeuren van laag naar hoog
-            //"select Docent_id, count(Docent_id)Gekozen from Bekwaamheid group by Docent_id having count(Docent_id) > 0 order by Gekozen";
-            //mensen van hoog aantal beschikbare uren naar laag
+        //Check of er nog open/ niet ingevulde taken in de lijst staan
 
-            //Check of er nog open/ niet ingevulde taken in de lijst staan
+        // mensen beschikbaar? zoniet opnieuw beginnen
 
-            // mensen beschikbaar? zoniet opnieuw beginnen
+        //
 
-            //
-
-            List<Voorkeur> OphalenVoorkeuren(int docentID)
+        List<Voorkeur> OphalenVoorkeuren(int docentID)
             {
                 List<Voorkeur> voorkeuren = new List<Voorkeur>();
                 try
                 {
-                    using (sqlConnection)
+                constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                using (SqlConnection con = new SqlConnection(constring))
                     {
-                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id WHERE d.DocentID = @docentID", sqlConnection))
+                        con.Open();
+                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id WHERE d.DocentID = @docentID", con))
                         {
                             cmd.Parameters.AddWithValue("@docentID", docentID);
                             using (SqlDataReader reader = cmd.ExecuteReader())
@@ -98,10 +102,11 @@ namespace AlgoritmeProject
             List<Docent> DocentenOphalen()
             {
                 List<Docent> docenten = new List<Docent>();
-
-                using (sqlConnection)
+            constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+            using (SqlConnection con = new SqlConnection(constring))
                 {
-                    using (var command = new SqlCommand("Select * From Docent", sqlConnection))
+                    con.Open();
+                    using (var command = new SqlCommand("Select * From Docent", con))
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
@@ -110,6 +115,7 @@ namespace AlgoritmeProject
                                 var docent = new Docent();
                                 docent.docentID = (int)reader["DocentID"];
                                 docent.voorkeuren = OphalenVoorkeuren(docent.docentID);
+                                docent.aantalkeuzes = docent.voorkeuren.Count;
                                 docenten.Add(docent);
                             }
                         }
@@ -123,7 +129,9 @@ namespace AlgoritmeProject
                 foreach (var docent in DocentenOphalen())
                 {
                     int aantaltaken = docent.aantalkeuzes;
-
+                    if(docent.voorkeuren.Count != 0) { 
+                    Console.WriteLine(docent.docentID + "---------------------");
+                    }
                     foreach (var voorkeur in docent.voorkeuren)
                     {
                         int prioriteit = voorkeur.Prioriteit;
@@ -149,12 +157,17 @@ namespace AlgoritmeProject
                             WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score);
                         }
                     }
+                    if (docent.voorkeuren.Count != 0)
+                    {
+                        Console.WriteLine("--------------------------------");
+                    }
                 }
             }
 
             void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score)
             {
                 Console.WriteLine(String.Format("Docent id: {0}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score));
+
 
             }
         }
