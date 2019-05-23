@@ -10,6 +10,7 @@ namespace AlgoritmeProject
         public int aantalkeuzes { get; set; }
         public List<Voorkeur> voorkeuren { get; set; }
         public int InzetbareUren { get; set; }
+        public double Score { get; set; }
 
         public Docent()
         {

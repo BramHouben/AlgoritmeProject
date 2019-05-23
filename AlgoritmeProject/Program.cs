@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace AlgoritmeProject
 {
@@ -9,7 +10,7 @@ namespace AlgoritmeProject
     {
         private static void Main(string[] args)
         {
-            List<Taak> alleTaken = new List<Taak>();
+            List<Taak> taken = new List<Taak>();
             List<Docent> users = new List<Docent>();
             SqlConnection sqlConnection = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
             string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
@@ -30,43 +31,31 @@ namespace AlgoritmeProject
             //}
             // Alle taken optellen die gekozen zijn van laag naar hoog, 0 achteraan
 
-            using (SqlConnection con = new SqlConnection(constring))
-            {
-                con.Open();
-                using (var command = new SqlCommand("SelecteerAlleinzetten", con))
-                {
-                    command.CommandType = CommandType.StoredProcedure;
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        //var reader = command.ExecuteReader();
-                        while (reader.Read())
-                        {
-                            var item = new Docent();
-                            item.docentID = (int)reader["DocentID"];
-                            item.voorkeuren = OphalenVoorkeuren((int)reader["DocentID"]);
-                            users.Add(item);
-                        }
-                    }
 
-                }
-            }
-               
-        
+            //using (SqlConnection con = new SqlConnection(constring))
+            //{
+            //    con.Open();
+            //    using (var command = new SqlCommand("SelecteerAlleinzetten", con))
+            //    {
+            //        command.CommandType = CommandType.StoredProcedure;
+            //        using (SqlDataReader reader = command.ExecuteReader())
+            //        {
+            //            //var reader = command.ExecuteReader();
+            //            while (reader.Read())
+            //            {
+            //                var item = new Docent();
+            //                item.docentID = (int)reader["DocentID"];
+            //                item.voorkeuren = OphalenVoorkeuren((int)reader["DocentID"]);
+            //                users.Add(item);
+            //            }
+            //        }
 
-            ScoreBerekenen();
-        
-        //    "select Taak, count(taak)Aantal from Bekwaamheid group by Taak having count(Taak) > 0 order by Aantal";
-        //// mensen met het aantal voorkeuren van laag naar hoog
-        //"select Docent_id, count(Docent_id)Gekozen from Bekwaamheid group by Docent_id having count(Docent_id) > 0 order by Gekozen";
-        //mensen van hoog aantal beschikbare uren naar laag
+            //    }
+            //}
 
-        //Check of er nog open/ niet ingevulde taken in de lijst staan
+            Indelen();
 
-        // mensen beschikbaar? zoniet opnieuw beginnen
-
-        //
-
-        List<Voorkeur> OphalenVoorkeuren(int docentID)
+            List<Voorkeur> OphalenVoorkeuren(int docentID)
             {
                 List<Voorkeur> voorkeuren = new List<Voorkeur>();
                 try
@@ -107,109 +96,176 @@ namespace AlgoritmeProject
                 return voorkeuren;
             }
 
-            List<Docent> DocentenOphalen()
+            void Indelen()
             {
-                List<Docent> docenten = new List<Docent>();
-            constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
-            using (SqlConnection con = new SqlConnection(constring))
+                foreach (var taak in TakenOphalen())
+                {
+                    List<Docent> DocentenScores = new List<Docent>();
+
+                    foreach (var docent in InzetbareDocenten(taak.TaakID))
+                    {
+                        int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
+
+                        docent.Score = ScoreBerekenen(docent.InzetbareUren, taak.BenodigdeUren, taak.AantalKeerGekozen, taak.AantalKlassen, prioriteit);
+
+                        DocentenScores.Add(docent);
+                    }
+
+                    List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderBy(o => o.Score).ToList();
+
+                    foreach (var item in GesorteerdeDocentenScores)
+                    {
+                        Console.WriteLine(item.docentID + " " + item.Score);
+                    }
+                }
+            }
+
+            int PrioriteitOphalen(List<Voorkeur> voorkeuren, int taakID)
+            {
+                foreach (var voorkeur in voorkeuren)
+                {
+                    if (voorkeur.TaakID == taakID)
+                    {
+                        return voorkeur.Prioriteit;
+                    }
+                }
+                throw new Exception();
+            }
+
+            double ScoreBerekenen(int inzetbareUren, int benodigdeUren, int aantalkeergekozen, int aantalklassen, int prioriteit)
+            {
+                int score = 100;
+
+                score -= inzetbareUren / benodigdeUren * prioriteit;
+
+                return score;
+            }
+
+            List<Taak> TakenOphalen()
+            {
+                taken = new List<Taak>();
+                constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                using (SqlConnection con = new SqlConnection(constring))
                 {
                     con.Open();
-                    using (var command = new SqlCommand("Select * From Docent", con))
+                    using (var command = new SqlCommand("Select * From Taak", con))
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
                             {
+                                var taak = new Taak();
+                                taak.TaakID = (int)reader["TaakID"];
+                                taak.TaakNaam = reader["TaakNaam"].ToString();
+                                taak.BenodigdeUren = (int)reader["BenodigdeUren"];
+                                taak.AantalKlassen = (int)reader["Aantal_Klassen"];
+
+                                taken.Add(taak);
+                            }
+                        }
+                    }
+                }
+                return taken;
+            }
+
+            List<Docent> InzetbareDocenten(int taakID)
+            {
+                List<Docent> docenten = new List<Docent>();
+                constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                using (SqlConnection con = new SqlConnection(constring))
+                {
+                    con.Open();
+                    using (var command = new SqlCommand("SELECT D.* " +
+                                                        "FROM Docent as D " +
+                                                        "INNER JOIN Bekwaamheid as B ON D.DocentID = B.Docent_id " +
+                                                        "WHERE B.TaakID = @taakID", con))
+                    {
+                        command.Parameters.AddWithValue("@taakID", taakID);
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
                                 var docent = new Docent();
-                                docent.docentID = (int)reader["DocentID"];
+
+                                docent.docentID = (int)reader["DocentId"];
+                                docent.InzetbareUren = (int)reader["RuimteVoorInzet"];
                                 docent.voorkeuren = OphalenVoorkeuren(docent.docentID);
-                                docent.aantalkeuzes = docent.voorkeuren.Count;
-                                if (DBNull.Value.Equals(reader["RuimteVoorInzet"]))
-                                {
-                                    docent.InzetbareUren = 0;
-                                }
-                                else
-                                {
-                                    docent.InzetbareUren = (int)reader["RuimteVoorInzet"];
-                                }
+
                                 docenten.Add(docent);
                             }
                         }
                     }
                 }
-                
                 return docenten;
             }
 
-            void ScoreBerekenen()
-            {
-                foreach (var docent in DocentenOphalen())
-                {
-                    int aantaltaken = docent.aantalkeuzes;
-                    if(docent.voorkeuren.Count != 0) { 
-                    Console.WriteLine(docent.docentID + "--------------------------------");
-                    }
-                    foreach (var voorkeur in docent.voorkeuren)
-                    {
-                        int prioriteit = voorkeur.Prioriteit;
+            //void ScoreBerekenen()
+            //{
+            //    foreach (var docent in DocentenOphalen())
+            //    {
+            //        int aantaltaken = docent.aantalkeuzes;
+            //        if(docent.voorkeuren.Count != 0) { 
+            //        Console.WriteLine(docent.docentID + "--------------------------------");
+            //        }
+            //        foreach (var voorkeur in docent.voorkeuren)
+            //        {
+            //            int prioriteit = voorkeur.Prioriteit;
 
-                        if (aantaltaken == 1)
-                        {
-                            if(docent.InzetbareUren > voorkeur.BenodigdeUren)
-                            {
-                                voorkeur.Score = (100 - (5 * prioriteit) * 0.5);
-                            }
-                            else
-                            {
-                                int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
-                                voorkeur.Score = (100 - (5 * prioriteit) * 0.5) - (verschil / 8);
-                            }
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-                        }
-                        else if (prioriteit == 1)
-                        {
-                            if (docent.InzetbareUren > voorkeur.BenodigdeUren)
-                            {
-                                voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
-                            }
-                            else
-                            {
-                                int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
-                                voorkeur.Score = (100 - (5 * aantaltaken) * 0.5) - (verschil / 8);
-                            }
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-                        }
-                        else if (prioriteit > 1 && aantaltaken > 1)
-                        {
-                            if(docent.InzetbareUren > voorkeur.BenodigdeUren)
-                            {
-                                voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
-                            }
-                            else
-                            {
-                                int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
-                                voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5) - (verschil / 8);
-                            }
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-                        }
-                        else if (aantaltaken == 1 && prioriteit == 1)
-                        {
-                            voorkeur.Score = 100;
-                            WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-                        }
-                    }
-                    if (docent.voorkeuren.Count != 0)
-                    {
-                        Console.WriteLine("---------------------------------");
-                    }
-                }
-            }
+            //            if (aantaltaken == 1)
+            //            {
+            //                if(docent.InzetbareUren > voorkeur.BenodigdeUren)
+            //                {
+            //                    voorkeur.Score = (100 - (5 * prioriteit) * 0.5);
+            //                }
+            //                else
+            //                {
+            //                    int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
+            //                    voorkeur.Score = (100 - (5 * prioriteit) * 0.5) - (verschil / 8);
+            //                }
+            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
+            //            }
+            //            else if (prioriteit == 1)
+            //            {
+            //                if (docent.InzetbareUren > voorkeur.BenodigdeUren)
+            //                {
+            //                    voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
+            //                }
+            //                else
+            //                {
+            //                    int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
+            //                    voorkeur.Score = (100 - (5 * aantaltaken) * 0.5) - (verschil / 8);
+            //                }
+            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
+            //            }
+            //            else if (prioriteit > 1 && aantaltaken > 1)
+            //            {
+            //                if(docent.InzetbareUren > voorkeur.BenodigdeUren)
+            //                {
+            //                    voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
+            //                }
+            //                else
+            //                {
+            //                    int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
+            //                    voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5) - (verschil / 8);
+            //                }
+            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
+            //            }
+            //            else if (aantaltaken == 1 && prioriteit == 1)
+            //            {
+            //                voorkeur.Score = 100;
+            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
+            //            }
+            //        }
+            //        if (docent.voorkeuren.Count != 0)
+            //        {
+            //            Console.WriteLine("---------------------------------");
+            //        }
+            //    }
+            //}
 
             void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
             {
                 Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
-
-
             }
         }
     }
