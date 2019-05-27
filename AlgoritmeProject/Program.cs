@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 
@@ -14,54 +13,14 @@ namespace AlgoritmeProject
             List<Docent> users = new List<Docent>();
             SqlConnection sqlConnection = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
             string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
-            //connstring
-            //
-            // begin algoritme
-
-            // als 1e de lijst met gefixeerde laag naar hoog
-            //using (SqlConnection con = new SqlConnection(constring))
-            //{
-            //    con.Open();
-            //    using (SqlCommand command = new SqlCommand("INSERT INTO EindTabelAlgoritme(Docent_id, Taak_id) SELECT DocentID,Taak_id FROM GefixeerdeTaken"))
-            //    {
-            //        command.Connection = sqlConnection;
-            //        command.ExecuteNonQuery();
-            //        Console.WriteLine("Gefixeerde mensen ingedeeld!");
-            //    }
-            //}
-            // Alle taken optellen die gekozen zijn van laag naar hoog, 0 achteraan
-
-
-            //using (SqlConnection con = new SqlConnection(constring))
-            //{
-            //    con.Open();
-            //    using (var command = new SqlCommand("SelecteerAlleinzetten", con))
-            //    {
-            //        command.CommandType = CommandType.StoredProcedure;
-            //        using (SqlDataReader reader = command.ExecuteReader())
-            //        {
-            //            //var reader = command.ExecuteReader();
-            //            while (reader.Read())
-            //            {
-            //                var item = new Docent();
-            //                item.docentID = (int)reader["DocentID"];
-            //                item.voorkeuren = OphalenVoorkeuren((int)reader["DocentID"]);
-            //                users.Add(item);
-            //            }
-            //        }
-
-            //    }
-            //}
-
-            Indelen();
 
             List<Voorkeur> OphalenVoorkeuren(int docentID)
             {
                 List<Voorkeur> voorkeuren = new List<Voorkeur>();
                 try
                 {
-                constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
-                using (SqlConnection con = new SqlConnection(constring))
+                    constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                    using (SqlConnection con = new SqlConnection(constring))
                     {
                         con.Open();
                         using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
@@ -111,8 +70,9 @@ namespace AlgoritmeProject
                         DocentenScores.Add(docent);
                     }
 
-                    List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderBy(o => o.Score).ToList();
+                    List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
 
+                    Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
                     foreach (var item in GesorteerdeDocentenScores)
                     {
                         Console.WriteLine(item.docentID + " " + item.Score);
@@ -134,9 +94,9 @@ namespace AlgoritmeProject
 
             double ScoreBerekenen(int inzetbareUren, int benodigdeUren, int aantalkeergekozen, int aantalklassen, int prioriteit)
             {
-                int score = 100;
+                double score = 100;
 
-                score -= inzetbareUren / benodigdeUren * prioriteit;
+                score -= (double)inzetbareUren / (double)benodigdeUren * prioriteit;
 
                 return score;
             }
@@ -204,7 +164,7 @@ namespace AlgoritmeProject
             //    foreach (var docent in DocentenOphalen())
             //    {
             //        int aantaltaken = docent.aantalkeuzes;
-            //        if(docent.voorkeuren.Count != 0) { 
+            //        if(docent.voorkeuren.Count != 0) {
             //        Console.WriteLine(docent.docentID + "--------------------------------");
             //        }
             //        foreach (var voorkeur in docent.voorkeuren)
@@ -262,7 +222,7 @@ namespace AlgoritmeProject
             //        }
             //    }
             //}
-
+            Indelen();
             void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
             {
                 Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
