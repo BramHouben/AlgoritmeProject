@@ -1,4 +1,6 @@
-﻿namespace AlgoritmeProject
+﻿using System.Collections.Generic;
+
+namespace AlgoritmeProject
 {
     public  class Taak
     {
@@ -9,9 +11,10 @@
         public int BenodigdeUren { get; set; }
         public int AantalKlassen { get; set; }
 
+        public List<Docent> IngedeeldeDocent { get; set; }
         public Taak()
         {
-
+            IngedeeldeDocent = new List<Docent>();
         }
     }
 }

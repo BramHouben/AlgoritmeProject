@@ -60,7 +60,7 @@ namespace AlgoritmeProject
                 foreach (var taak in TakenOphalen())
                 {
                     List<Docent> DocentenScores = new List<Docent>();
-
+                    int aantal = 0;
                     foreach (var docent in InzetbareDocenten(taak.TaakID))
                     {
                         int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
@@ -68,6 +68,7 @@ namespace AlgoritmeProject
                         docent.Score = ScoreBerekenen(docent.InzetbareUren, taak.BenodigdeUren, taak.AantalKeerGekozen, taak.AantalKlassen, prioriteit);
 
                         DocentenScores.Add(docent);
+                        //Console.WriteLine(taak.TaakNaam + "  " + taak.AantalKeerGekozen + "  " + taak.AantalKlassen);
                     }
 
                     List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
@@ -75,7 +76,12 @@ namespace AlgoritmeProject
                     Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
                     foreach (var item in GesorteerdeDocentenScores)
                     {
-                        Console.WriteLine(item.docentID + " " + item.Score);
+                        //Console.WriteLine(item.docentID + " " + item.Score);
+                        if (aantal <= taak.AantalKlassen)
+                        {
+                            ZetinDb(item.docentID, taak.TaakID);
+                            aantal++;
+                        }
                     }
                 }
             }
@@ -222,6 +228,35 @@ namespace AlgoritmeProject
             //        }
             //    }
             //}
+            void ZetinDb(int docentID, int taakID)
+            {
+                Console.WriteLine(docentID + " en samen " + taakID);
+
+                try
+                {
+                    constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                    using (SqlConnection con = new SqlConnection(constring))
+                    {
+                        con.Open();
+                        using (SqlCommand command = new SqlCommand("insert into EindTabelAlgoritme (Docent_id, Taak_id) Values(@docent_id,@taak_id)", con))
+                        {
+                            command.Parameters.AddWithValue("@docent_id", docentID);
+                            command.Parameters.AddWithValue("@taak_id", taakID);
+                            command.ExecuteNonQuery();
+                        }
+                        using (SqlCommand command = new SqlCommand("UPDATE Docent set RuimteVoorInzet = (SELECT RuimteVoorInzet FROM Docent WHERE DocentID = @docent_id) - (SELECT (BenodigdeUren / Aantal_Klassen) from taak where TaakId = @taak_id) where DocentID = @docent_id ", con))
+                        {
+                            command.Parameters.AddWithValue("@docent_id", docentID);
+                            command.Parameters.AddWithValue("@taak_id", taakID);
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                }
+                catch (SqlException foutje)
+                {
+                    Console.WriteLine(foutje.Message);
+                }
+            }
             Indelen();
             void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
             {

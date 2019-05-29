@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AlgoritmeProject
 {
-    class Voorkeur
+  public  class Voorkeur
     {
         public int TaakID { get; set; }
         public string TaakNaam { get; set; }
