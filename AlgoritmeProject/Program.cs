@@ -59,28 +59,31 @@ namespace AlgoritmeProject
             {
                 foreach (var taak in TakenOphalen())
                 {
-                    List<Docent> DocentenScores = new List<Docent>();
-                    int aantal = 0;
-                    foreach (var docent in InzetbareDocenten(taak.TaakID))
+                    for (int klas = 0; klas < taak.AantalKlassen; klas++)
                     {
-                        int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
-
-                        docent.Score = ScoreBerekenen(docent.InzetbareUren, taak.BenodigdeUren, taak.AantalKeerGekozen, taak.AantalKlassen, prioriteit);
-
-                        DocentenScores.Add(docent);
-                        //Console.WriteLine(taak.TaakNaam + "  " + taak.AantalKeerGekozen + "  " + taak.AantalKlassen);
-                    }
-
-                    List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
-
-                    Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
-                    foreach (var item in GesorteerdeDocentenScores)
-                    {
-                        //Console.WriteLine(item.docentID + " " + item.Score);
-                        if (aantal <= taak.AantalKlassen)
+                        List<Docent> DocentenScores = new List<Docent>();
+                        int aantal = 0;
+                        foreach (var docent in InzetbareDocenten(taak.TaakID))
                         {
-                            ZetinDb(item.docentID, taak.TaakID);
-                            aantal++;
+                            int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
+
+                            docent.Score = ScoreBerekenen(docent.InzetbareUren, taak.BenodigdeUren, taak.AantalKeerGekozen, taak.AantalKlassen, prioriteit);
+
+                            DocentenScores.Add(docent);
+                            //Console.WriteLine(taak.TaakNaam + "  " + taak.AantalKeerGekozen + "  " + taak.AantalKlassen);
+                        }
+
+                        List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
+
+                        Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
+                        foreach (var docent in GesorteerdeDocentenScores)
+                        {
+                            Console.WriteLine(docent.docentID + " " + docent.Score);
+                            if (aantal <= taak.AantalKlassen)
+                            {
+                                //ZetinDb(docent.docentID, taak.TaakID);
+                                aantal++;
+                            }
                         }
                     }
                 }
@@ -102,7 +105,7 @@ namespace AlgoritmeProject
             {
                 double score = 100;
 
-                score -= (double)inzetbareUren / (double)benodigdeUren * prioriteit;
+                score -= (double)inzetbareUren / benodigdeUren * prioriteit;
 
                 return score;
             }
