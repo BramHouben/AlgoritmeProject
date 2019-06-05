@@ -61,21 +61,25 @@ namespace AlgoritmeProject
             {
                 foreach (var taak in TakenOphalen())
                 {
+                    List<Docent> DocentenScores = new List<Docent>();
+
+
+                    foreach (var docent in InzetbareDocenten(taak.TaakID))
+                    {
+                        int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
+
+                        docent.Score = ScoreBerekenen(docent.InzetbareUren, taak.BenodigdeUren, taak.AantalKeerGekozen, taak.AantalKlassen, prioriteit);
+
+                        DocentenScores.Add(docent);
+                        //Console.WriteLine(taak.TaakNaam + "  " + taak.AantalKeerGekozen + "  " + taak.AantalKlassen);
+                    }
+
+                    List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
                     for (int klas = 0; klas < taak.AantalKlassen; klas++)
                     {
-                        List<Docent> DocentenScores = new List<Docent>();
 
-                        foreach (var docent in InzetbareDocenten(taak.TaakID))
-                        {
-                            int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
 
-                            docent.Score = ScoreBerekenen(docent.InzetbareUren, taak.BenodigdeUren, taak.AantalKeerGekozen, taak.AantalKlassen, prioriteit);
 
-                            DocentenScores.Add(docent);
-                            //Console.WriteLine(taak.TaakNaam + "  " + taak.AantalKeerGekozen + "  " + taak.AantalKlassen);
-                        }
-
-                        List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
 
                         Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
 
