@@ -23,7 +23,7 @@ namespace AlgoritmeProject
                     using (SqlConnection con = new SqlConnection(constring))
                     {
                         con.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren, d.Ingedeeld,d.VoorkeurID from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
+                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren, d.Ingedeeld,d.VoorkeurID from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID ", con))
                         {
                             cmd.Parameters.AddWithValue("@docentID", docentID);
                             using (SqlDataReader reader = cmd.ExecuteReader())
@@ -82,23 +82,22 @@ namespace AlgoritmeProject
                         foreach (var docent in GesorteerdeDocentenScores.ToList())
                         {
                             Console.WriteLine(docent.docentID + " " + docent.Score);
+                          
 
-                            ZetinDb(docent.docentID, taak.TaakID);
-                            VerwijderVoorkeur(docent.docentID, taak.TaakID) ;
-                            GesorteerdeDocentenScores.Remove(docent);
                         }
+                        ZetinDb(GesorteerdeDocentenScores.First().docentID, taak.TaakID);
+                        int test = IdOphalen(GesorteerdeDocentenScores.First().voorkeuren, GesorteerdeDocentenScores.First().docentID);
+                        VerwijderVoorkeur(GesorteerdeDocentenScores.First().docentID, test);
+                        GesorteerdeDocentenScores.Remove(GesorteerdeDocentenScores.First());
                     }
                 }
             }
 
-            int IdOphalen(List<Voorkeur> voorkeuren, int voorkeur_id)
+            int IdOphalen(List<Voorkeur> voorkeuren, int docent_id)
             {
                 foreach (var voorkeur in voorkeuren)
                 {
-                    if (voorkeur.VoorkeurID == voorkeur_id)
-                    {
-                        return voorkeur.VoorkeurID;
-                    }
+                    return voorkeur.VoorkeurID;
                 }
                 throw new Exception();
             }
@@ -280,7 +279,7 @@ namespace AlgoritmeProject
             //}
         }
 
-        private static void VerwijderVoorkeur(int docentID, int taakID)
+        private static void VerwijderVoorkeur(int docentID, int voorkeur_id)
         {
             
             try
@@ -290,9 +289,9 @@ namespace AlgoritmeProject
                 using (SqlConnection connectie = new SqlConnection(constring))
                 {
                     connectie.Open();
-                    using (SqlCommand command = new SqlCommand("update docentVoorkeur set ingedeeld=1 where DocentID= @docent_idl", connectie))
+                    using (SqlCommand command = new SqlCommand("update docentVoorkeur set ingedeeld=1 where DocentID= @docent_id and VoorkeurID = @voorkeur_id", connectie))
                     {
-                        command.Parameters.AddWithValue("@taak_id", taakID);
+                        command.Parameters.AddWithValue("@Voorkeur_id", voorkeur_id);
                         command.Parameters.AddWithValue("@docent_id", docentID);
                         command.ExecuteNonQuery();
 
