@@ -23,7 +23,7 @@ namespace AlgoritmeProject
                     using (SqlConnection con = new SqlConnection(constring))
                     {
                         con.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
+                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren, d.Ingedeeld from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
                         {
                             cmd.Parameters.AddWithValue("@docentID", docentID);
                             using (SqlDataReader reader = cmd.ExecuteReader())
@@ -33,6 +33,7 @@ namespace AlgoritmeProject
                                     Voorkeur voorkeur = new Voorkeur();
                                     voorkeur.TaakID = (int)reader["TaakID"];
                                     voorkeur.TaakNaam = (string)reader["Taak"];
+                                    voorkeur.Ingedeeld = (Boolean)reader["Ingedeeld"];
                                     voorkeur.Prioriteit = (int)reader["Prioriteit"];
                                     if (DBNull.Value.Equals(reader["BenodigdeUren"]))
                                     {
@@ -48,9 +49,9 @@ namespace AlgoritmeProject
                         }
                     }
                 }
-                catch
+                catch(SqlException fout)
                 {
-                    Console.WriteLine("Something went wrong");
+                    Console.WriteLine(fout.Message);
                 }
                 return voorkeuren;
             }
@@ -62,7 +63,7 @@ namespace AlgoritmeProject
                     for (int klas = 0; klas < taak.AantalKlassen; klas++)
                     {
                         List<Docent> DocentenScores = new List<Docent>();
-                        int aantal = 0;
+
                         foreach (var docent in InzetbareDocenten(taak.TaakID))
                         {
                             int prioriteit = PrioriteitOphalen(docent.voorkeuren, taak.TaakID);
@@ -76,14 +77,18 @@ namespace AlgoritmeProject
                         List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
 
                         Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
-                        foreach (var docent in GesorteerdeDocentenScores)
+
+                        foreach (var docent in GesorteerdeDocentenScores.ToList())
                         {
                             Console.WriteLine(docent.docentID + " " + docent.Score);
-                            if (aantal <= taak.AantalKlassen)
+
+                            if (docent.voorkeuren.Count > 1)
                             {
-                                //ZetinDb(docent.docentID, taak.TaakID);
-                                aantal++;
+
                             }
+                            ZetinDb(docent.docentID, taak.TaakID);
+
+                            GesorteerdeDocentenScores.Remove(docent);
                         }
                     }
                 }
@@ -261,10 +266,10 @@ namespace AlgoritmeProject
                 }
             }
             Indelen();
-            void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
-            {
-                Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
-            }
+            //void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
+            //{
+            //    Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
+            //}
         }
     }
 }
