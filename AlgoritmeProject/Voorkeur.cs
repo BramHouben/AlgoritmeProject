@@ -6,6 +6,7 @@ namespace AlgoritmeProject
 {
   public  class Voorkeur
     {
+        public int VoorkeurID { get; set; }
         public int TaakID { get; set; }
         public string TaakNaam { get; set; }
         public int Prioriteit { get; set; }

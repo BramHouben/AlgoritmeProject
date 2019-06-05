@@ -23,7 +23,7 @@ namespace AlgoritmeProject
                     using (SqlConnection con = new SqlConnection(constring))
                     {
                         con.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren, d.Ingedeeld from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
+                        using (SqlCommand cmd = new SqlCommand("SELECT b.TaakID, d.Prioriteit, b.Taak, t.BenodigdeUren, d.Ingedeeld,d.VoorkeurID from Bekwaamheid b inner join DocentVoorkeur d ON b.Bekwaam_Id = d.Bekwaamheid_id inner join Taak t ON b.TaakID = t.TaakID  WHERE d.DocentID = @docentID", con))
                         {
                             cmd.Parameters.AddWithValue("@docentID", docentID);
                             using (SqlDataReader reader = cmd.ExecuteReader())
@@ -31,6 +31,7 @@ namespace AlgoritmeProject
                                 while (reader.Read())
                                 {
                                     Voorkeur voorkeur = new Voorkeur();
+                                    voorkeur.VoorkeurID = (int)reader["VoorkeurID"];
                                     voorkeur.TaakID = (int)reader["TaakID"];
                                     voorkeur.TaakNaam = (string)reader["Taak"];
                                     voorkeur.Ingedeeld = (Boolean)reader["Ingedeeld"];
@@ -82,18 +83,25 @@ namespace AlgoritmeProject
                         {
                             Console.WriteLine(docent.docentID + " " + docent.Score);
 
-                            if (docent.voorkeuren.Count > 1)
-                            {
-
-                            }
                             ZetinDb(docent.docentID, taak.TaakID);
-
+                            VerwijderVoorkeur(docent.docentID, taak.TaakID) ;
                             GesorteerdeDocentenScores.Remove(docent);
                         }
                     }
                 }
             }
 
+            int IdOphalen(List<Voorkeur> voorkeuren, int voorkeur_id)
+            {
+                foreach (var voorkeur in voorkeuren)
+                {
+                    if (voorkeur.VoorkeurID == voorkeur_id)
+                    {
+                        return voorkeur.VoorkeurID;
+                    }
+                }
+                throw new Exception();
+            }
             int PrioriteitOphalen(List<Voorkeur> voorkeuren, int taakID)
             {
                 foreach (var voorkeur in voorkeuren)
@@ -270,6 +278,32 @@ namespace AlgoritmeProject
             //{
             //    Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
             //}
+        }
+
+        private static void VerwijderVoorkeur(int docentID, int taakID)
+        {
+            
+            try
+            {
+             string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+
+                using (SqlConnection connectie = new SqlConnection(constring))
+                {
+                    connectie.Open();
+                    using (SqlCommand command = new SqlCommand("update docentVoorkeur set ingedeeld=1 where DocentID= @docent_idl", connectie))
+                    {
+                        command.Parameters.AddWithValue("@taak_id", taakID);
+                        command.Parameters.AddWithValue("@docent_id", docentID);
+                        command.ExecuteNonQuery();
+
+                    }
+                }
+            }
+            catch (SqlException fout)
+            {
+
+                Console.WriteLine(fout.Message);
+            }
         }
     }
 }
