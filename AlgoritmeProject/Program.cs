@@ -89,10 +89,17 @@ namespace AlgoritmeProject
                           
 
                         }
-                        ZetinDb(GesorteerdeDocentenScores.First().docentID, taak.TaakID);
-                        int test = IdOphalen(GesorteerdeDocentenScores.First().voorkeuren, GesorteerdeDocentenScores.First().docentID);
-                        VerwijderVoorkeur(GesorteerdeDocentenScores.First().docentID, test);
-                        GesorteerdeDocentenScores.Remove(GesorteerdeDocentenScores.First());
+                        if (GesorteerdeDocentenScores.Count == 0) {
+                            ZetinDbNull(taak.TaakID);
+                            Console.WriteLine("Geen Leraren voor " + taak.TaakNaam);
+                        }
+                        else
+                        {
+                            ZetinDb(GesorteerdeDocentenScores.First().docentID, taak.TaakID);
+                            int test = IdOphalen(GesorteerdeDocentenScores.First().voorkeuren, GesorteerdeDocentenScores.First().docentID);
+                            VerwijderVoorkeur(GesorteerdeDocentenScores.First().docentID, test);
+                            GesorteerdeDocentenScores.Remove(GesorteerdeDocentenScores.First());
+                        }
                     }
                 }
             }
@@ -281,6 +288,30 @@ namespace AlgoritmeProject
             //{
             //    Console.WriteLine(String.Format("Docent id: {0}, Taak: {4}, Prioriteit: {1}, Aantal taken: {2}, Score: {3}", docentid, prioriteit, aantalkeuzes, score, Naam));
             //}
+        }
+
+        private static void ZetinDbNull(int taakID)
+        {
+            try
+            {
+                string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+
+                using (SqlConnection connectie = new SqlConnection(constring))
+                {
+                    connectie.Open();
+                    using (SqlCommand command = new SqlCommand("insert into EindTabelAlgoritme (Taak_id, Docent_id) values (@taak_id,NULL)", connectie))
+                    {
+                        command.Parameters.AddWithValue("@taak_id", taakID);
+                        command.ExecuteNonQuery();
+
+                    }
+                }
+            }
+            catch (SqlException fout)
+            {
+
+                Console.WriteLine(fout.Message);
+            }
         }
 
         private static void VerwijderVoorkeur(int docentID, int voorkeur_id)
