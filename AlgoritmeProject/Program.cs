@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 
 namespace AlgoritmeProject
@@ -9,6 +11,32 @@ namespace AlgoritmeProject
     {
         private static void Main(string[] args)
         {
+            void DeleteTabel()
+            {
+                try
+                {
+                    using (SqlConnection Sqlconnectie = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"))
+                    {
+                        using (SqlCommand cmd = new SqlCommand())
+                        {
+                            Int32 rowsAffected;
+
+                            cmd.CommandText = "DeleteAlgoritmeTabel";
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Connection = Sqlconnectie;
+
+                            Sqlconnectie.Open();
+
+                            rowsAffected = cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+                catch (SqlException fout)
+                {
+                    Debug.WriteLine(fout.Message);
+                }
+            }
+
             List<Taak> taken = new List<Taak>();
             List<Docent> users = new List<Docent>();
             SqlConnection sqlConnection = new SqlConnection("Data Source=mssql.fhict.local;User ID=dbi410994;Password=Test123!;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
@@ -50,7 +78,7 @@ namespace AlgoritmeProject
                         }
                     }
                 }
-                catch(SqlException fout)
+                catch (SqlException fout)
                 {
                     Console.WriteLine(fout.Message);
                 }
@@ -62,7 +90,6 @@ namespace AlgoritmeProject
                 foreach (var taak in TakenOphalen())
                 {
                     List<Docent> DocentenScores = new List<Docent>();
-
 
                     foreach (var docent in InzetbareDocenten(taak.TaakID))
                     {
@@ -77,19 +104,14 @@ namespace AlgoritmeProject
                     List<Docent> GesorteerdeDocentenScores = DocentenScores.OrderByDescending(o => o.Score).ToList();
                     for (int klas = 0; klas < taak.AantalKlassen; klas++)
                     {
-
-
-
-
                         Console.WriteLine("-----------------------------------------" + taak.TaakNaam + "  " + taak.TaakID + "----------------------------------------------");
 
                         foreach (var docent in GesorteerdeDocentenScores.ToList())
                         {
                             Console.WriteLine(docent.docentID + " " + docent.Score);
-                          
-
                         }
-                        if (GesorteerdeDocentenScores.Count == 0) {
+                        if (GesorteerdeDocentenScores.Count == 0)
+                        {
                             ZetinDbNull(taak.TaakID);
                             Console.WriteLine("Geen Leraren voor " + taak.TaakNaam);
                         }
@@ -191,69 +213,6 @@ namespace AlgoritmeProject
                 return docenten;
             }
 
-            //void ScoreBerekenen()
-            //{
-            //    foreach (var docent in DocentenOphalen())
-            //    {
-            //        int aantaltaken = docent.aantalkeuzes;
-            //        if(docent.voorkeuren.Count != 0) {
-            //        Console.WriteLine(docent.docentID + "--------------------------------");
-            //        }
-            //        foreach (var voorkeur in docent.voorkeuren)
-            //        {
-            //            int prioriteit = voorkeur.Prioriteit;
-
-            //            if (aantaltaken == 1)
-            //            {
-            //                if(docent.InzetbareUren > voorkeur.BenodigdeUren)
-            //                {
-            //                    voorkeur.Score = (100 - (5 * prioriteit) * 0.5);
-            //                }
-            //                else
-            //                {
-            //                    int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
-            //                    voorkeur.Score = (100 - (5 * prioriteit) * 0.5) - (verschil / 8);
-            //                }
-            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-            //            }
-            //            else if (prioriteit == 1)
-            //            {
-            //                if (docent.InzetbareUren > voorkeur.BenodigdeUren)
-            //                {
-            //                    voorkeur.Score = (100 - (5 * aantaltaken) * 0.5);
-            //                }
-            //                else
-            //                {
-            //                    int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
-            //                    voorkeur.Score = (100 - (5 * aantaltaken) * 0.5) - (verschil / 8);
-            //                }
-            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-            //            }
-            //            else if (prioriteit > 1 && aantaltaken > 1)
-            //            {
-            //                if(docent.InzetbareUren > voorkeur.BenodigdeUren)
-            //                {
-            //                    voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5);
-            //                }
-            //                else
-            //                {
-            //                    int verschil = voorkeur.BenodigdeUren - docent.InzetbareUren;
-            //                    voorkeur.Score = (100 - (5 * aantaltaken * prioriteit) * 0.5) - (verschil / 8);
-            //                }
-            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-            //            }
-            //            else if (aantaltaken == 1 && prioriteit == 1)
-            //            {
-            //                voorkeur.Score = 100;
-            //                WriteResult(docent.docentID, voorkeur.Prioriteit, docent.aantalkeuzes, voorkeur.Score, voorkeur.TaakNaam);
-            //            }
-            //        }
-            //        if (docent.voorkeuren.Count != 0)
-            //        {
-            //            Console.WriteLine("---------------------------------");
-            //        }
-            //    }
-            //}
             void ZetinDb(int docentID, int taakID)
             {
                 Console.WriteLine(docentID + " en samen " + taakID);
@@ -283,6 +242,7 @@ namespace AlgoritmeProject
                     Console.WriteLine(foutje.Message);
                 }
             }
+            DeleteTabel();
             Indelen();
             //void WriteResult(int docentid, int prioriteit, int aantalkeuzes, double score, string Naam)
             //{
@@ -303,23 +263,20 @@ namespace AlgoritmeProject
                     {
                         command.Parameters.AddWithValue("@taak_id", taakID);
                         command.ExecuteNonQuery();
-
                     }
                 }
             }
             catch (SqlException fout)
             {
-
                 Console.WriteLine(fout.Message);
             }
         }
 
         private static void VerwijderVoorkeur(int docentID, int voorkeur_id)
         {
-            
             try
             {
-             string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                string constring = "Data Source = mssql.fhict.local; User ID = dbi410994; Password = Test123!; Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
 
                 using (SqlConnection connectie = new SqlConnection(constring))
                 {
@@ -329,13 +286,11 @@ namespace AlgoritmeProject
                         command.Parameters.AddWithValue("@Voorkeur_id", voorkeur_id);
                         command.Parameters.AddWithValue("@docent_id", docentID);
                         command.ExecuteNonQuery();
-
                     }
                 }
             }
             catch (SqlException fout)
             {
-
                 Console.WriteLine(fout.Message);
             }
         }
